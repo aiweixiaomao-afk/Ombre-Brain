@@ -33,6 +33,14 @@ issuer、`/.well-known/oauth-authorization-server` 和
 `/.well-known/oauth-protected-resource` 都按这个 origin 生成。
 动态客户端注册在 `/oauth/register`。
 
+进程绑定 `127.0.0.1` 时，MCP SDK 的 DNS rebinding 防护默认只接受
+localhost。反代把 `Host: ob.aiwei.asia` 传进来会得到 `421 Misdirected Request`，
+即使 OAuth 已经成功。启动时会按 `deployment.public_url` 把这个 Host 和
+`https://ob.aiwei.asia` 加进允许名单，并同时允许 ChatGPT 的
+`https://chatgpt.com` / `https://chat.openai.com`。防护保持开启，鉴权也不关闭。
+其他客户端的 Origin 用 `OMBRE_MCP_ALLOWED_ORIGINS` 追加。改完要重启
+`ombre-brain`。
+
 压缩模型和向量的密钥继续放在服务器上的 `config.yaml`（或
 `OMBRE_COMPRESS_API_KEY` / `OMBRE_EMBED_API_KEY`）。不要写进 git。
 改完密钥或 `public_url` 后只重启本服务：

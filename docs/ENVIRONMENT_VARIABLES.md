@@ -43,6 +43,8 @@
 - `OMBRE_SETUP_TOKEN`：首次设置密码的远程覆盖口令。默认只有从 `127.0.0.1`/`localhost` 直连（且没有反向代理转发头）的请求才能调用 `/auth/setup`；设置此变量后，远程请求带上请求头 `X-Ombre-Setup-Token: <此变量的值>` 也可以完成首次设置（Dashboard 网页本身不发这个头，需要手动 `curl` 调用一次）。适合"已经部署到云服务器、还没来得及先设 `OMBRE_DASHBOARD_PASSWORD`"这种场景的补救；密码设置成功后这个 token 就不再需要。
 - `OMBRE_DASHBOARD_SESSION_DAYS`：Dashboard 登录会话天数。
 - `OMBRE_TRUSTED_PROXY_CIDRS`：直接连接 OB 的最后一跳可信反向代理 CIDR；不是公网客户端 IP 或域名，禁止使用 `0.0.0.0/0`。官方 Compose 模板会从 `.env` 透传该值，修改后需要重新创建容器。
+- `OMBRE_MCP_ALLOWED_HOSTS`：逗号分隔的额外 Host 允许项。仅当进程绑定在回环地址且已经配置了公网 origin（或本变量/下面的 Origin 变量非空）时生效。`deployment.public_url` 的主机名会自动加入，一般不用再写。不要用 `*` 关掉 DNS rebinding 防护。
+- `OMBRE_MCP_ALLOWED_ORIGINS`：逗号分隔的额外 Origin，例如 `https://claude.ai`。公网 HTTPS 部署会自动允许 `deployment.public_url` 对应的 origin，以及 `https://chatgpt.com` 和 `https://chat.openai.com`。没有 Origin 的服务端调用仍然放行。
 
 ## Tunnel、Hook 与 GitHub
 
