@@ -54,6 +54,8 @@ from ombrebrain.storage.source_store import SourceStore
 from ombrebrain.them import ThemService, ThemStore, ThemToolGate
 from ombrebrain.you import YouService, YouStore, YouToolGate
 from ombrebrain.security.deployment_profile import enforce_mcp_network_guard
+from ombrebrain.security.mcp_transport import build_mcp_transport_security
+from ombrebrain.security.public_origin import configured_public_origin
 from ombrebrain.protocol.strict_schema import harden_registered_tools
 from import_memory import ImportEngine
 from migrate_engine import MigrateEngine
@@ -369,6 +371,23 @@ async def _stdio_lifespan(_server):
         await lifecycle.stop()
 
 
+# 回环绑定时 FastMCP 会自动打开 DNS rebinding 防护，默认只放行 localhost。
+# 主 Caddy 反代过来的 Host 是公网域名（deployment.public_url），不在名单里
+# 就会在鉴权通过之后返回 421。这里把公网 Host/Origin 加进同一份名单，
+# 防护仍然开着，也不扩大到任意 Host。
+_public_origin = configured_public_origin(config)
+_mcp_transport_security = build_mcp_transport_security(
+    bind_host=_BIND_HOST,
+    public_origin=_public_origin,
+    extra_hosts=os.environ.get("OMBRE_MCP_ALLOWED_HOSTS", ""),
+    extra_origins=os.environ.get("OMBRE_MCP_ALLOWED_ORIGINS", ""),
+)
+if _mcp_transport_security is not None:
+    logger.info(
+        "MCP DNS-rebinding allowlist extended for public origin %s",
+        _public_origin or "(extra hosts/origins only)",
+    )
+
 mcp = FastMCP(
     "Ombre Brain",
     host=_BIND_HOST,
@@ -376,6 +395,7 @@ mcp = FastMCP(
     json_response=True,
     stateless_http=True,
     lifespan=_stdio_lifespan if config.get("transport", "stdio") == "stdio" else None,
+    transport_security=_mcp_transport_security,
 )
 
 # 3.4.0：信件并回主链路，`/mcp-extra` 再次退役。
