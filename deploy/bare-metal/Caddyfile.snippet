@@ -1,0 +1,16 @@
+# 追加到已经在 80/443 上服务的主 Caddyfile 末尾。
+# 不要另起一个 Caddy，也不要使用 443 以外的端口。
+# 改之前备份 Caddyfile，caddy validate 通过后再 systemctl reload caddy。
+ob.aiwei.asia {
+	reverse_proxy 127.0.0.1:18001 {
+		header_up Host {http.request.host}
+		header_up X-Forwarded-Host {http.request.host}
+		header_up X-Forwarded-Proto {http.request.scheme}
+		header_up X-Forwarded-For {http.request.remote.host}
+		flush_interval -1
+		transport http {
+			read_timeout 3600s
+			write_timeout 3600s
+		}
+	}
+}
